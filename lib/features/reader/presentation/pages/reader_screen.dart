@@ -88,22 +88,38 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 }
 
-class _ZoomablePage extends StatelessWidget {
+class _ZoomablePage extends StatefulWidget {
   const _ZoomablePage({required this.url, this.onVisible});
 
   final String url;
   final VoidCallback? onVisible;
 
   @override
+  State<_ZoomablePage> createState() => _ZoomablePageState();
+}
+
+class _ZoomablePageState extends State<_ZoomablePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Fire onVisible after first frame — never call a BLoC event
+    // synchronously inside build() as it causes setState-during-build errors.
+    if (widget.onVisible != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onVisible!();
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    onVisible?.call();
     return GestureDetector(
       onDoubleTap: () {},
       child: InteractiveViewer(
         minScale: 1,
         maxScale: 4,
         child: CachedNetworkImage(
-          imageUrl: url,
+          imageUrl: widget.url,
           width: double.infinity,
           fit: BoxFit.fitWidth,
           placeholder: (_, __) => const AspectRatio(
